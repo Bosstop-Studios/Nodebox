@@ -11,6 +11,11 @@
     --text-color: #ffffff;
 }
 
+form {
+    margin: 0;
+    padding: 0;
+}
+
 input {
     width: 100%;
     padding: 10px;
@@ -47,7 +52,7 @@ button:hover {
 }
 
 .card {
-    width: 400px;
+    max-width: 450px;
     height: auto;
     background-color: var(--bg-color-dark);
     border-radius: 10px;

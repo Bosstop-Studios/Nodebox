@@ -2,4 +2,8 @@
 import ms from 'ms'
 import { writable } from 'svelte/store'
 
-export let cookie = writable()
+export let auth = writable()
+
+export function getAuth() {
+   return auth.get();
+}

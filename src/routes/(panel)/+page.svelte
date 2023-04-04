@@ -1,7 +1,5 @@
 <script>
-    import { cookie } from '$lib/js/store.js';
-    import { goto } from '$app/navigation';
-
+    import { page } from '$app/stores'; 
 </script>
 
 <svelte:head>
@@ -9,5 +7,5 @@
 </svelte:head>
 
 <section>
-    <h1>{$cookie}</h1>
+    <h1>HOi</h1>
 </section>

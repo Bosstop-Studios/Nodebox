@@ -15,16 +15,16 @@
 	},
 	"devDependencies": {
 		"@neoconfetti/svelte": "^1.0.0",
-		"@sveltejs/adapter-node": "^1.2.2",
-		"@sveltejs/kit": "^1.5.0",
-		"eslint": "^8.28.0",
-		"eslint-config-prettier": "^8.5.0",
+		"@sveltejs/adapter-node": "^1.2.3",
+		"@sveltejs/kit": "^1.15.0",
+		"eslint": "^8.37.0",
+		"eslint-config-prettier": "^8.8.0",
 		"eslint-plugin-svelte3": "^4.0.0",
 		"fs": "0.0.1-security",
 		"ms": "^2.1.3",
-		"svelte": "^3.54.0",
-		"typescript": "^4.9.3",
-		"vite": "^4.2.0",
-		"vitest": "^0.25.3"
+		"svelte": "^3.58.0",
+		"typescript": "^4.9.5",
+		"vite": "^4.2.1",
+		"vitest": "^0.25.8"
 	}
 }

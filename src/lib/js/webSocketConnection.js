@@ -1,5 +1,5 @@
 import ioClient from 'socket.io-client';
-const ENDPOINT = 'http://localhost:5173';
+const ENDPOINT = '/';
 
 const socket = ioClient(ENDPOINT, {
     withCredentials: true,
