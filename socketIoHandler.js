@@ -1,56 +1,110 @@
+// @ts-nocheck
 import { Server } from 'socket.io';
+import { setTimeout } from 'node:timers/promises'
+import { exec } from "child_process";
+import fs from 'fs';
+import moment from 'moment';
+
+let servers = new Map();
+let serverlogs = new Map();
+
+function onAnySocket(socket, event, ...args) {
+    let data = args[0];
+
+    switch (event) {
+        case 'start':
+            startServer(socket, data.serverId);
+            break;
+        case 'restart':
+            restartServer(socket, data.serverId);
+            break;
+        case 'stop':
+            stopServer(socket, data.serverId);
+            break;
+    }
+
+    if(event.includes("console-")) {
+        let eventArgs = event.split("-");
+        if(eventArgs[2] == "connect") socket.emit(`console-${eventArgs[1]}-connected`, { logs: serverlogs.get(eventArgs[1]), pid: servers.get(eventArgs[1]) ? servers.get(eventArgs[1]).pid : null });
+    }
+    
+}
+
+async function startServer(socket, serverId) {
+
+    if(servers.get(serverId)) return socket.emit(`console-${serverId}-serverMessage`, "Server already running");
+
+    if(!serverlogs.get(serverId)) serverlogs.set(serverId, []);
+
+    let server = null;
+    let path = `./servers/${serverId}/`;
+    let dirs = await fs.readdirSync("./servers");
+
+    dirs.forEach((dir) => {
+        let files = fs.readdirSync(`./servers/${dir}`).filter(file => file == "nodebox.config.json");
+        for( const file of files ) {
+            let serverConfig = JSON.parse(fs.readFileSync(`./servers/${dir}/${file}`, "utf8"));
+            if(serverConfig.id == serverId) server = serverConfig;
+        }
+    });
+    
+    let coffeeProcess = exec(server.start, {
+        cwd: path,
+    });
+
+    servers.set(serverId, coffeeProcess);
+
+    socket.emit(`console-${serverId}-start`, coffeeProcess.pid);
+    messageLog(serverId, "Starting process...", "success");
+
+    coffeeProcess.stdout.on('data', function(data) {
+        socket.emit(`console-${serverId}-message`, data);
+        messageLog(serverId, data, "normal");
+    });
+
+    coffeeProcess.on('exit', function(data) {
+        socket.emit(`console-${serverId}-exit`, "Process exited");
+        messageLog(serverId, "Process exited", "error");
+    });
+    
+}
+
+async function restartServer(socket, serverId) {
+    let server = servers.get(serverId);
+    if(!server) return socket.emit(`console-${serverId}-serverMessage`, "Server not running");
+
+    server.kill();
+    servers.delete(serverId);
+    socket.emit(`console-${serverId}-serverMessage`, "Restarting server...");
+
+    await setTimeout(1000);
+
+    startServer(socket, serverId);
+}
+
+function stopServer(socket, serverId) {
+    let server = servers.get(serverId);
+    if(server) {
+        server.kill();
+        servers.delete(serverId);
+    }
+}
+
+function messageLog(serverId, message, type) {
+    console.log(serverId);
+    let logs = serverlogs.get(serverId);
+    if(!logs) logs = [];
+    let data = { text: `[${moment().format('LTS')}] - ${message}`, type: type }; 
+    if(logs.length > 50) logs.shift();
+    logs.push(data);
+    serverlogs.set(serverId, logs);
+}
 
 export default function injectSocketIO(server) {
-    const io = new Server(server);
-    const rooms = new Map();
+    let io = new Server(server);
 
     io.on('connection', (socket) => {
-
-        socket.on('join', (room) => {
-
-            if(rooms.get(room) && rooms.get(room).length == 2) {
-                console.log('Room is full, kicking user')
-                socket.emit("kick");
-                return;
-            } else {
-                socket.join(room);
-                if (!rooms.has(room)) {
-                    rooms.set(room, []);
-                    rooms.get(room).push(socket.id);
-                } else {
-                    rooms.get(room).push(socket.id);
-                }
-    
-                socket.to(room).emit('joined', rooms.get(room));
-            }
-            
-        });
-
-        socket.onAny((event,...args) => {
-            if(event == 'disconnect') return;
-            if(event == 'join') return;
-            if(event == 'leave') return;
-            
-            let room = event.split('-')[0];
-            
-            if (rooms.has(room)) {
-                rooms.get(room).forEach((id) => {
-                    socket.to(id).emit(event,...args);
-                });
-            }
-        });
-
-        socket.on('disconnect', () => {
-            rooms.forEach((value, key) => {
-                if (value.includes(socket.id)) {
-                    value.splice(value.indexOf(socket.id), 1);
-                    if (value.length == 0) {
-                        rooms.delete(key);
-                    }
-                }
-            });
-        })
-
+        socket.onAny((event, ...args) => onAnySocket(socket, event, ...args));
     });
 
     console.log('SocketIO injected');

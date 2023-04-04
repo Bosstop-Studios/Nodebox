@@ -9,7 +9,7 @@ export const actions = {
         const username = form.get('username');
         const password = form.get('password');
 
-        if (!username || !password) return customResponse(400, false, 'Username and Password are required');
+        if (!username || !password) return fail(400, 'Username and Password are required');
 
         if (typeof username !== 'string' || typeof password !== 'string') {
             return { status: 400, message: 'Username and Password must be strings'}
@@ -27,5 +27,4 @@ export const actions = {
         }
         
     }
-
 };
