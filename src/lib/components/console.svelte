@@ -8,7 +8,7 @@
     export let name;
     export let pid;
 
-    let consoleElement;
+    let consoleElement, commandInput;
 
     onMount(() => {
         io.emit(`console-${id}-connect`);
@@ -74,6 +74,12 @@
         consoleElement.scrollTop = consoleElement.scrollHeight;
     });
 
+    function sendCommand() {
+        if(commandInput.value && commandInput.value.length > 0) {
+            io.emit(`console-${id}-command`, commandInput.value);
+            commandInput.value = "";
+        }
+    }
 
 </script>
 
@@ -86,8 +92,11 @@
             <p class="primary"><b>PID:</b> <code>{pid || "none"}</code></p>
             <br>
         </div>
+	<!--
         <div class="console-input">
-            <input type="text" placeholder="Command"/>
+            <input bind:this={commandInput} type="text" placeholder="Command"/>
+            <button on:click={sendCommand}>Send</button>
         </div>
+	-->
     </div>
 </div>

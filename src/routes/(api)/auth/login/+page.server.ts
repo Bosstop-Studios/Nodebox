@@ -1,4 +1,5 @@
 // @ts-nocheck
+import ms from 'ms';
 import { env } from '$env/dynamic/private'
 import { fail, redirect } from '@sveltejs/kit';
 
@@ -16,15 +17,15 @@ export const actions = {
         }
 
         if(username == env.panel_username && password == env.panel_password) {
-            cookies.set('session', 'logged_in', {
+            cookies.set('session', true, {
                 path: '/',
-                httpOnly: true,
+                httpOnly: false,
                 sameSite: 'strict',
-                maxAge: 60 * 60 * 24 * 30
+                maxAge: ms('1hr')
             });
-
-            throw redirect(303, "/");
+            
+            throw redirect(307, '/');;
         }
-        
+        return;
     }
 };

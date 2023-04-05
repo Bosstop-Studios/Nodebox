@@ -5,7 +5,13 @@ import { redirect } from '@sveltejs/kit';
 export const handle = async ({ event, resolve }) => {
     const session = event.cookies.get('session');
 
-    if((event.url.pathname != '/auth/login' || event.url.pathname != '/auth/logout') && !session) throw redirect(307, '/auth/login');
+    if(session == false && event.url.pathname != '/auth/login') {
+        throw redirect(307, '/auth/login');
+    }
+
+    if(!session && event.url.pathname != '/auth/login') {
+        throw redirect(307, '/auth/login');
+    }
 
     return await resolve(event);
 };

@@ -16,3 +16,10 @@ export async function load({}) {
 
     return { servers };
 }
+
+/** @type {import('./$types').Actions} */
+export const actions = {
+    default: async ({ request, cookies }) => {
+        return;
+    }
+};

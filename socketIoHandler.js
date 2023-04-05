@@ -26,6 +26,13 @@ function onAnySocket(socket, event, ...args) {
     if(event.includes("console-")) {
         let eventArgs = event.split("-");
         if(eventArgs[2] == "connect") socket.emit(`console-${eventArgs[1]}-connected`, { logs: serverlogs.get(eventArgs[1]), pid: servers.get(eventArgs[1]) ? servers.get(eventArgs[1]).pid : null });
+
+        if(eventArgs[2] == "command") {
+            console.log(data);
+            let server = servers.get(eventArgs[1]);
+            server.send(data);
+        }
+
     }
     
 }
@@ -91,7 +98,6 @@ function stopServer(socket, serverId) {
 }
 
 function messageLog(serverId, message, type) {
-    console.log(serverId);
     let logs = serverlogs.get(serverId);
     if(!logs) logs = [];
     let data = { text: `[${moment().format('LTS')}] - ${message}`, type: type }; 

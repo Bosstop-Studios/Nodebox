@@ -5,7 +5,6 @@ import { error } from '@sveltejs/kit';
 /** @type {import('./$types').PageLoad} */
 export async function load({ params }) {
     if (params.id) {
-
         let server = null;
         let dirs = await fs.readdirSync("./servers");
 
