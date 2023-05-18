@@ -1,9 +1,10 @@
 // @ts-nocheck
 import { Server } from 'socket.io';
 import { setTimeout } from 'node:timers/promises'
-import { exec } from "child_process";
 import fs from 'fs';
 import moment from 'moment';
+import { spawn } from 'node:child_process';
+import path from 'path';
 
 let servers = new Map();
 let serverlogs = new Map();
@@ -44,7 +45,7 @@ async function startServer(socket, serverId) {
     if(!serverlogs.get(serverId)) serverlogs.set(serverId, []);
 
     let server = null;
-    let path = `./servers/${serverId}/`;
+    let serverPath = `./servers/${serverId}/`;
     let dirs = await fs.readdirSync("./servers");
 
     dirs.forEach((dir) => {
@@ -55,11 +56,19 @@ async function startServer(socket, serverId) {
         }
     });
     
-    let coffeeProcess = exec(server.start, {
-        cwd: path,
+    let coffeeProcess = spawn(server.start, [path.join(__dirname, serverPath)], {
+        cwd: path.join(__dirname, serverPath),
+        shell: true
     });
 
+    coffeeProcess.stdout.setEncoding('utf8');
+    coffeeProcess.stderr.setEncoding('utf8');
+
     servers.set(serverId, coffeeProcess);
+
+    console.log(`Starting process ${coffeeProcess.pid}`);
+    console.log(`Server ID: ${serverId}`);
+    console.log(coffeeProcess.connected)
 
     socket.emit(`console-${serverId}-start`, coffeeProcess.pid);
     messageLog(serverId, "Starting process...", "success");
@@ -69,18 +78,25 @@ async function startServer(socket, serverId) {
         messageLog(serverId, data, "normal");
     });
 
-    coffeeProcess.on('exit', function(data) {
+    coffeeProcess.stderr.on('data', function(data) {
+        socket.emit(`console-${serverId}-message`, data);
+        messageLog(serverId, data, "error");
+    });
+
+    coffeeProcess.on('exit', function(code) {
+        console.log('closing code: ' + code);
         socket.emit(`console-${serverId}-exit`, "Process exited");
         messageLog(serverId, "Process exited", "error");
+        if(servers.get(serverId)) servers.delete(serverId);
     });
-    
+
 }
 
 async function restartServer(socket, serverId) {
     let server = servers.get(serverId);
     if(!server) return socket.emit(`console-${serverId}-serverMessage`, "Server not running");
 
-    server.kill();
+    process.kill(server.pid, 9);
     servers.delete(serverId);
     socket.emit(`console-${serverId}-serverMessage`, "Restarting server...");
 
@@ -92,8 +108,11 @@ async function restartServer(socket, serverId) {
 function stopServer(socket, serverId) {
     let server = servers.get(serverId);
     if(server) {
-        server.kill();
+        process.kill(server.pid, 9);
+
         servers.delete(serverId);
+    } else {
+        socket.emit(`console-${serverId}-serverMessage`, "Server not running");
     }
 }
 
@@ -107,7 +126,12 @@ function messageLog(serverId, message, type) {
 }
 
 export default function injectSocketIO(server) {
-    let io = new Server(server);
+    let io = new Server(server, {
+        cors: {
+            origin: "*",
+            methods: ["GET", "POST"]
+        }
+    });
 
     io.on('connection', (socket) => {
         socket.onAny((event, ...args) => onAnySocket(socket, event, ...args));

@@ -8,7 +8,7 @@ const config = {
 		include: ['src/**/*.{test,spec}.{js,ts}']
 	},
     server: {
-        port: process.env.PORT,
+        port: 5000,
     }
 };
 
